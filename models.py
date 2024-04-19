@@ -23,8 +23,8 @@ class User:
             query = f"""
                 INSERT INTO users (username, password) VALUES (
                 '{self.username}', '{self.password}'
-                )
-                RETURNING id
+                );
+                RETURNING id;
             """
             crs.execute(query)
             self._user_id = crs.fetchone()[0]
@@ -89,7 +89,61 @@ class User:
 
 
 class Message:
-    pass
+    def __init__(self, from_user_id, to_user_id, text):
+        self._id = -1
+        self.from_user_id = from_user_id
+        self.to_user_id = to_user_id
+        self.text = text
+        self._creation_date = None
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def creation_date(self):
+        return self._creation_date
+
+    def save_to_db(self, crs):
+        if self._id == -1:
+            query = f"""
+                INSERT INTO messages (from_id, to_user_id, text) VALUES (
+                    {self.from_user_id}, {self.to_user_id}, '{self.content}'
+                );
+                RETURNING id, creation_date;
+            """
+            crs.execute(query)
+            self._id, self_creation_date = crs.fetchone()
+        # poprawić create_db.py -> nazwy column w tabeli
+        else:
+            query = f"""
+                UPDATE messages SET 
+                    from_id={self.from_user_id}, 
+                    to_user_id={self.to_user_id}, 
+                    text='{self.text}'
+                    WHERE id = {self._id};
+            """
+            crs.execute(query)
+
+    @staticmethod
+    def load_all_messages(crs, id_=None):
+        if id_ is None:
+            query = f"""
+                SELECT * FROM messages
+            """
+        else:
+            query = f"""
+                SELECT * FROM messages WHERE id={id_};
+            """
+        messages = []
+        crs.execute(query)
+        for row in crs.fetchall():
+            id_, from_id, to_user_id, text, creation_date = row
+            loaded_message = Message(from_id, to_user_id, text)
+            loaded_message._self_id = id_
+            loaded_message._creation_date = creation_date
+            messages.append(loaded_message)
+        return messages
 
 
 # settings = {
