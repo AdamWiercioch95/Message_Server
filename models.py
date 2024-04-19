@@ -28,8 +28,15 @@ class User:
             """
             crs.execute(query)
             self._user_id = crs.fetchone()[0]
-            return True
-        return False
+        else:
+            query = f""""
+                UPDATE users SET 
+                username = '{self.username}',
+                password = '{self.password}'
+                WHERE id = {self._user_id};
+            """
+            crs.execute(query)
+            self._user_id = crs.fetchone()
 
     @staticmethod
     def load_user_by_username(crs, username):
